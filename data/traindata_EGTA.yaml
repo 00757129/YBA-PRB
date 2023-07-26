@@ -1,0 +1,11 @@
+# train and val datasets (image directory or *.txt file with image paths)
+
+train: /home/cse509/EandTA/labels2 # put your path description file for training images
+val: /home/cse509/EandTA/labels2  # here for validation images
+test: /home/cse509/EandTA/test # here for your images
+
+# number of classes
+nc: 2
+
+# class names
+names: [ 'ThreskiornisAethiopicus', 'EgrettaGarzetta']
