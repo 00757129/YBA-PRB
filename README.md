@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# PRB-ThreskiornisAethiopicus
-=======
 # Official YOLOv7
 
 Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://arxiv.org/abs/2207.02696)
@@ -235,4 +232,3 @@ Yolov7-mask & YOLOv7-pose
 * [https://github.com/TexasInstruments/edgeai-yolov5/tree/yolo-pose](https://github.com/TexasInstruments/edgeai-yolov5/tree/yolo-pose)
 
 </details>
->>>>>>> first commit
