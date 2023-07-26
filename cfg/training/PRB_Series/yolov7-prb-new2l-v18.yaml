@@ -1,0 +1,140 @@
+# parameters
+nc: 80  # number of classes
+depth_multiple: 1.00  # model depth multiple
+width_multiple: 1.00  # layer channel multiple
+
+# anchors
+anchors:
+  - [12,16, 19,36, 40,28]  # P3/8
+  - [36,75, 76,55, 72,146]  # P4/16
+  - [142,110, 192,243, 459,401]  # P5/32
+
+# yolov7 backbone
+backbone:
+  # [from, number, module, args]
+  [[-1, 1, Conv, [32, 3, 1]],  # 0
+  
+   [-1, 1, Conv, [64, 3, 2]],  # 1-P1/2      
+   [-1, 1, Conv, [64, 3, 1]], #2 (P1 backbone)
+   
+   [-1, 1, Conv, [128, 3, 2]],  # 3-P2/4  
+   [-1, 1, Conv, [64, 1, 1]],
+   [-2, 1, Conv, [64, 1, 1]],
+   [-1, 1, Conv, [64, 3, 1]],
+   [-1, 1, Conv, [64, 3, 1]],
+   [-1, 1, Conv, [64, 3, 1]],
+   [-1, 1, Conv, [64, 3, 1]],
+   [[-1, -3, -5, -6], 1, Concat, [1]],
+   [-1, 1, Conv, [256, 1, 1]],  # 11 (P2 backbone)
+         
+   [-1, 1, MP, []],
+   [-1, 1, Conv, [128, 1, 1]],
+   [-3, 1, Conv, [128, 1, 1]],
+   [-1, 1, Conv, [128, 3, 2]],
+   [[-1, -3], 1, Concat, [1]],  # 16-P3/8  
+   [-1, 1, Conv, [128, 1, 1]],
+   [-2, 1, Conv, [128, 1, 1]],
+   [-1, 1, Conv, [128, 3, 1]],
+   [-1, 1, Conv, [128, 3, 1]],
+   [-1, 1, Conv, [128, 3, 1]],
+   [-1, 1, Conv, [128, 3, 1]],
+   [[-1, -3, -5, -6], 1, Concat, [1]],
+   [-1, 1, Conv, [512, 1, 1]],  # 24 (P3 backbone)
+         
+   [-1, 1, MP, []],
+   [-1, 1, Conv, [256, 1, 1]],
+   [-3, 1, Conv, [256, 1, 1]],
+   [-1, 1, Conv, [256, 3, 2]],
+   [[-1, -3], 1, Concat, [1]],  # 29-P4/16  
+   [-1, 1, Conv, [256, 1, 1]],
+   [-2, 1, Conv, [256, 1, 1]],
+   [-1, 1, Conv, [256, 3, 1]],
+   [-1, 1, Conv, [256, 3, 1]],
+   [-1, 1, Conv, [256, 3, 1]],
+   [-1, 1, Conv, [256, 3, 1]],
+   [[-1, -3, -5, -6], 1, Concat, [1]],
+   [-1, 1, Conv, [1024, 1, 1]],  # 37 (P4 backbone)
+         
+   [-1, 1, MP, []],
+   [-1, 1, Conv, [512, 1, 1]],
+   [-3, 1, Conv, [512, 1, 1]],
+   [-1, 1, Conv, [512, 3, 2]],
+   [[-1, -3], 1, Concat, [1]],  # 42-P5/32  
+   [-1, 1, Conv, [256, 1, 1]],
+   [-2, 1, Conv, [256, 1, 1]],
+   [-1, 1, Conv, [256, 3, 1]],
+   [-1, 1, Conv, [256, 3, 1]],
+   [-1, 1, Conv, [256, 3, 1]],
+   [-1, 1, Conv, [256, 3, 1]],
+   [[-1, -3, -5, -6], 1, Concat, [1]],
+   [-1, 1, Conv, [1024, 1, 1]],  # 50
+  ]
+
+# 2 (P1 backbone)
+# 11 (P2 backbone)
+# 24 (P3 backbone)
+# 37 (P4 backbone)
+# 50 (P5 backbone)
+
+
+# yolov7 head
+head:
+  [
+    # bifusion module 1: P5 + P4 + P3
+    [50, 1, SPPCSPC, [512]], # 51
+    [-1, 1, Conv, [256, 1, 1]], # 52 /32
+    
+    [[37, -1], 1, RBBlock2L, [512, '256,1,1', 2, 'nearest']],
+    [-1, 1, ViTAttn, [512, 4, 4, 500, 1, 1, 256]],
+    [-1, 1, Conv, [256, 1, 1]], # 55 /16
+    
+    [[24, -1], 1, RBBlock2L, [256, '128,1,1', 2, 'nearest']],
+    [-1, 1, ViTAttn, [256, 4, 4, 500, 1, 1, 256]],
+    [-1, 1, Conv, [256, 1, 1]],  # 58 /8
+    # end of bifusion module 1
+    
+    
+    # pre-fusion module 2: P4 + P3 + P2
+    [37, 1, SPP, [256]],  # 59
+    [-1, 1, Conv, [128, 1, 2]], # 60 /32
+    
+    [[24, -1], 1, RBBlock2L, [512, '128,1,2', 2, 'nearest']],
+    [-1, 1, ViTAttn, [512, 4, 4, 500, 1, 1, 256]],
+    [-1, 1, Conv, [256, 1, 1]], # 63 /16
+    
+    [[11, -1], 1, RBBlock2L, [256, '64,1,2', 2, 'nearest']],
+    [-1, 1, ViTAttn, [256, 4, 4, 500, 1, 1, 256]],
+    [-1, 1, Conv, [256, 1, 1]], # 66 /8
+    # end of pre-fusion module 2
+    
+    # pre-fusion module 3: P3 + P2 + P1
+    [24, 1, SPP, [128]], # 67
+    [-1, 1, Conv, [64, 1, 4]], # 68 /32
+    
+    [[11, -1], 1, RBBlock2L, [512, '64,1,4', 2, 'nearest']],
+    [-1, 1, ViTAttn, [512, 4, 4, 500, 1, 1, 256]],
+    [-1, 1, Conv, [256, 1, 1]], # 71 /16
+
+    [[2, -1], 1, RBBlock2L, [256, '32,1,4', 2, 'nearest']],
+    [-1, 1, ViTAttn, [256, 4, 4, 500, 1, 1, 256]],
+    [-1, 1, Conv, [256, 1, 1]], # 74 /8
+    # end of pre-fusion module 3
+    
+    
+    [[58, 66, 74], 1, Concat, [1]], # 75 multi-pyramid fusion PY3/8 
+    [-1, 4, BottleneckCSPB, [128]], # 76 bottleneck = PY + 1
+    [-1, 1, Conv, [256, 3, 1]],
+    [[55, 63, 71], 1, Concat, [1]],  # 78 multi-pyramid fusion PY4/16
+    [-1, 4, BottleneckCSPB, [256]], # 79 bottleneck = PY + 1
+    [-1, 1, Conv, [512, 3, 1]],
+    [[52, 60, 68], 1, Concat, [1]],  # 81 multi-pyramid fusion PY5/32
+    [-1, 4, BottleneckCSPB, [512]], # 82 bottleneck = PY + 1
+    [-1, 1, Conv, [1024, 3, 1]],
+
+    [77, 1, RepConv, [256, 3, 1]],  # 84
+    [80, 1, RepConv, [512, 3, 1]],  # 85
+    [83, 1, RepConv, [1024, 3, 1]],  # 86
+
+    [[84, 85, 86], 1, IDetect, [nc, anchors]],   # Detect(P3, P4, P5)
+    
+  ]
